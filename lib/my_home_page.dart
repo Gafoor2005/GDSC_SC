@@ -1,38 +1,57 @@
-import 'package:flutter/material.dart';
-import 'package:gdsc_sc/add_product.dart';
-import 'package:gdsc_sc/overview.dart';
+import 'dart:developer';
 
-class MyHomePage extends StatefulWidget {
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:gdsc_sc/add_product.dart';
+import 'package:gdsc_sc/auth_controller.dart';
+import 'package:gdsc_sc/my_account.dart';
+import 'package:gdsc_sc/overview.dart';
+import 'package:gdsc_sc/product_repo.dart';
+import 'package:gdsc_sc/types.dart';
+
+class MyHomePage extends ConsumerStatefulWidget {
   const MyHomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends ConsumerState<MyHomePage> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 226, 215, 215),
+      backgroundColor: const Color.fromARGB(255, 226, 215, 215),
       appBar: AppBar(
-        leading:
-            IconButton.filledTonal(onPressed: () {}, icon: Icon(Icons.menu)),
-        backgroundColor: Color.fromARGB(255, 255, 255, 255),
+        leading: IconButton.filledTonal(
+            onPressed: () {}, icon: const Icon(Icons.menu)),
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         title: const Text("waste"),
         titleSpacing: 0,
         elevation: 2,
         actions: [
-          IconButton(onPressed: () {}, icon: Icon(Icons.person_outline_rounded))
+          IconButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const MyAccount()));
+              },
+              icon: const Icon(Icons.person_outline_rounded))
         ],
       ),
       body: CustomScrollView(
         slivers: [
           SliverList.list(
             children: [
-              SizedBox(
+              const SizedBox(
                 height: 10,
               ),
-              Padding(
+              const Padding(
                 padding: EdgeInsets.only(left: 12.0),
                 child: Text(
                   "Cantogeries",
@@ -42,11 +61,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    SizedBox(
+                    const SizedBox(
                       width: 8,
                     ),
                     Card(
-                      child: Padding(
+                      color: Colors.green[900],
+                      child: const Padding(
                         padding: EdgeInsets.all(8.0),
                         child: Text(
                           " All ",
@@ -55,68 +75,82 @@ class _MyHomePageState extends State<MyHomePage> {
                           ),
                         ),
                       ),
-                      color: Colors.green[900],
                     ),
-                    Card(
+                    const Card(
                       child: Padding(
                         padding: EdgeInsets.all(8.0),
                         child: Text("organic"),
                       ),
                     ),
-                    Card(
+                    const Card(
                       child: Padding(
                         padding: EdgeInsets.all(8.0),
                         child: Text("plastic"),
                       ),
                     ),
-                    Card(
+                    const Card(
                       child: Padding(
                         padding: EdgeInsets.all(8.0),
                         child: Text("paper"),
                       ),
                     ),
-                    Card(
+                    const Card(
                       child: Padding(
                         padding: EdgeInsets.all(8.0),
                         child: Text("e-waste"),
                       ),
                     ),
-                    Card(
+                    const Card(
                       child: Padding(
                         padding: EdgeInsets.all(8.0),
                         child: Text("metal"),
                       ),
                     ),
-                    Card(
+                    const Card(
                       child: Padding(
                         padding: EdgeInsets.all(8.0),
                         child: Text("Glass"),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 8,
                     ),
                   ],
                 ),
               ),
-              SizedBox(
+              const SizedBox(
                 height: 10,
               ),
             ],
           ),
           SliverPadding(
             padding: const EdgeInsets.all(8),
-            sliver: SliverGrid.count(
-              crossAxisSpacing: 5,
-              mainAxisSpacing: 8,
-              crossAxisCount: 2,
-              childAspectRatio: .8,
-              children: const [
-                ItemCard(),
-                ItemCard(),
-                ItemCard(),
-              ],
-            ),
+            sliver: ref.watch(productProvider).when(
+                  data: (data) {
+                    return SliverGrid.builder(
+                      itemCount: data.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisSpacing: 5,
+                        mainAxisSpacing: 8,
+                        crossAxisCount: 2,
+                        childAspectRatio: .8,
+                      ),
+                      itemBuilder: (context, index) => ItemCard(p: data[index]),
+                    );
+                  },
+                  error: (error, stackTrace) => SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          Text("some error occured\n${error.toString()}"),
+                    ),
+                  ),
+                  loading: () => SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => const CircularProgressIndicator(),
+                    ),
+                  ),
+                ),
           ),
         ],
       ),
@@ -133,9 +167,11 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class ItemCard extends StatelessWidget {
+  final Product p;
   const ItemCard({
-    super.key,
-  });
+    Key? key,
+    required this.p,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +179,7 @@ class ItemCard extends StatelessWidget {
       padding: const EdgeInsets.only(),
       child: GestureDetector(
         onTap: () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (context) => const Overview())),
+            .push(MaterialPageRoute(builder: (context) => Overview(p: p))),
         child: Container(
           padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
@@ -173,9 +209,9 @@ class ItemCard extends StatelessWidget {
               const SizedBox(
                 height: 8,
               ),
-              const Text(
-                "waste plastic 2kgs water bottels",
-                style: TextStyle(
+              Text(
+                p.title,
+                style: const TextStyle(
                   overflow: TextOverflow.ellipsis,
                   height: 1.2,
                 ),
@@ -187,9 +223,9 @@ class ItemCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Rs. 200",
-                    style: TextStyle(
+                  Text(
+                    "Rs. ${p.price}",
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
